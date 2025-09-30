@@ -2,10 +2,10 @@ const jwt = require("jsonwebtoken");
 
 const auth = (roles = []) => {
   return (req, res, next) => {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
-    if (!token) return res.status(401).json({ msg: "No token, authorization denied" });
-
     try {
+      const token = req.header("Authorization")?.replace("Bearer ", "");
+      if (!token) return res.status(401).json({ msg: "No token, authorization denied" });
+
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = decoded;
 
@@ -15,7 +15,8 @@ const auth = (roles = []) => {
 
       next();
     } catch (err) {
-      res.status(401).json({ msg: "Token is not valid" });
+      console.error(err);
+      return res.status(401).json({ msg: "Token is not valid" });
     }
   };
 };

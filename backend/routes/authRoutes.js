@@ -7,6 +7,7 @@ const auth = require("../middleware/auth");
 const router = express.Router();
 
 // Signup
+// Accepts: { name, email, password, role, secret }
 router.post("/signup", async (req, res) => {
   const { name, email, password, role, secret } = req.body;
 
@@ -26,7 +27,7 @@ router.post("/signup", async (req, res) => {
       finalRole = "admin";
     }
 
-    // manager requests are downgraded to user until approved
+    // If someone requests manager, still register them as user by default
     if (role === "manager") {
       finalRole = "user";
     }
@@ -34,15 +35,15 @@ router.post("/signup", async (req, res) => {
     user = new User({ name, email, password: hashedPassword, role: finalRole });
     await user.save();
 
-    res.json({ msg: "User registered successfully" });
+    res.status(201).json({ msg: "User registered successfully" });
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
   }
 });
 
-
 // Login
+// Accepts: { email, password }
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -61,11 +62,12 @@ router.post("/login", async (req, res) => {
 
     res.json({ token, role: user.role });
   } catch (err) {
+    console.error(err);
     res.status(500).send("Server error");
   }
 });
 
-// Protected routes
+// Protected test routes
 router.get("/admin", auth(["admin"]), (req, res) => {
   res.json({ msg: "Welcome Admin!" });
 });
@@ -78,22 +80,31 @@ router.get("/user", auth(["user", "manager", "admin"]), (req, res) => {
   res.json({ msg: "Welcome User!" });
 });
 
-// Promote user to manager (admin only)
-router.patch("/promote/:id", auth(["admin"]), async (req, res) => {
+// Get all users (admin only) - returns users without passwords
+router.get("/users", auth(["admin"]), async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { role: "manager" },
-      { new: true }
-    );
-    if (!user) return res.status(404).json({ msg: "User not found" });
-
-    res.json({ msg: "User promoted to manager", user });
+    const users = await User.find().select("-password");
+    res.json(users);
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
   }
 });
 
+// Promote user to manager (admin only)
+router.patch("/promote/:id", auth(["admin"]), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    user.role = "manager";
+    await user.save();
+
+    res.json({ msg: "User promoted to manager", user: { _id: user._id, name: user.name, email: user.email, role: user.role } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
 
 module.exports = router;
