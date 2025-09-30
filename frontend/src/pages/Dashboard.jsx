@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
+import { useNavigate } from "react-router-dom";
+
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const role = localStorage.getItem("role");
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
-    window.location.href = "/login";
+    navigate("/login");
   };
 
   useEffect(() => {
