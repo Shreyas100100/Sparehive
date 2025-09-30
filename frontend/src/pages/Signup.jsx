@@ -6,6 +6,7 @@ import API from "../services/api";
 import { useNavigate } from "react-router-dom";
 import AuthCard from "../components/AuthCard";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const schema = yup.object().shape({
   name: yup.string().required("Name is required"),
@@ -71,6 +72,12 @@ export default function Signup() {
           Sign Up
         </button>
       </form>
+      <p className="text-sm text-center mt-4 text-gray-600">
+        Already have an account?{" "}
+        <Link to="/" className="text-blue-600 hover:underline">
+          Sign In
+        </Link>
+      </p>
     </AuthCard>
   );
 }

@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import AuthCard from "../components/AuthCard";
 import { Link } from "react-router-dom";
 
+
 const schema = yup.object().shape({
   email: yup.string().email("Invalid email").required("Email is required"),
   password: yup.string().required("Password is required"),
@@ -43,7 +44,7 @@ export default function Login() {
       </form>
        <p className="text-sm text-center mt-4 text-gray-600">
       Don’t have an account?{" "}
-      <Link to="/" className="text-blue-600 hover:underline">
+      <Link to="/signup" className="text-blue-600 hover:underline">
         Sign Up
       </Link>
     </p>
