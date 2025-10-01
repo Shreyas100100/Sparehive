@@ -60,7 +60,15 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res.json({ token, role: user.role });
+    res.json({ 
+      token, 
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
@@ -101,6 +109,34 @@ router.patch("/promote/:id", auth(["admin"]), async (req, res) => {
     await user.save();
 
     res.json({ msg: "User promoted to manager", user: { _id: user._id, name: user.name, email: user.email, role: user.role } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+// Get current user information
+router.get("/me", auth(), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+// Get specific user by ID (admin only)
+router.get("/user/:id", auth(["admin"]), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+    res.json(user);
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");

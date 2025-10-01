@@ -2,39 +2,60 @@ import { useEffect, useState } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
 
-
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [message, setMessage] = useState("");
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  
   const role = localStorage.getItem("role");
+  const name = localStorage.getItem("name");
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
+    localStorage.removeItem("name");
     navigate("/login");
   };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const endpoint =
-          role === "admin" ? "/auth/admin" :
-          role === "manager" ? "/auth/manager" :
-          "/auth/user";
-        const res = await API.get(endpoint);
-        setMessage(res.data.msg);
-      } catch {
-        setMessage("Error fetching data");
+        setLoading(true);
+        const res = await API.get("/auth/me");
+        setUserData(res.data);
+        setError("");
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+        setError("Error fetching user data. Please try logging in again.");
+        // Redirect to login if the token is invalid
+        if (err.response && err.response.status === 401) {
+          handleLogout();
+        }
+      } finally {
+        setLoading(false);
       }
     };
+    
     fetchData();
-  }, [role]);
+  }, []);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="bg-white p-6 rounded-lg shadow-md w-96 text-center">
-        <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-        <p className="mb-4">{message}</p>
+        <h1 className="text-2xl font-bold mb-4"> {userData?.role || role} Dashboard</h1>
+        
+        {loading ? (
+          <p>Loading...</p>
+        ) : error ? (
+          <p className="text-red-500">{error}</p>
+        ) : (
+          <div className="mb-4">
+            <p className="font-bold">Welcome, {userData?.name || name} !</p>
+            {/* <p className="text-gray-600">Email: {userData?.email}</p>
+            <p className="text-gray-600">Role: {userData?.role || role}</p> */}
+          </div>
+        )}
 
         {/* Role-based tabs */}
         <div className="space-y-2 mb-4">
