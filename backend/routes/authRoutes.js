@@ -143,4 +143,93 @@ router.get("/user/:id", auth(["admin"]), async (req, res) => {
   }
 });
 
+// Request manager role
+router.post("/request-role", auth(["user"]), async (req, res) => {
+  try {
+    const { reason } = req.body;
+    
+    if (!reason || reason.trim().length < 10) {
+      return res.status(400).json({ 
+        msg: "Please provide a detailed reason for your request (at least 10 characters)" 
+      });
+    }
+    
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+    
+    // Update user with request details
+    user.roleRequest = {
+      requested: true,
+      requestedRole: "manager",
+      requestReason: reason,
+      requestDate: new Date(),
+      requestStatus: "pending"
+    };
+    
+    await user.save();
+    
+    res.json({ msg: "Manager role request submitted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+// Get all role requests (admin only)
+router.get("/role-requests", auth(["admin"]), async (req, res) => {
+  try {
+    const requests = await User.find({
+      "roleRequest.requested": true,
+      "roleRequest.requestStatus": "pending"
+    }).select("-password");
+    
+    res.json(requests);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+// Approve or reject role request (admin only)
+router.patch("/role-requests/:userId", auth(["admin"]), async (req, res) => {
+  try {
+    const { action } = req.body; // "approve" or "reject"
+    
+    if (!["approve", "reject"].includes(action)) {
+      return res.status(400).json({ msg: "Invalid action" });
+    }
+    
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+    
+    if (!user.roleRequest.requested || user.roleRequest.requestStatus !== "pending") {
+      return res.status(400).json({ msg: "No pending role request for this user" });
+    }
+    
+    if (action === "approve") {
+      user.role = user.roleRequest.requestedRole;
+      user.roleRequest.requestStatus = "approved";
+    } else {
+      user.roleRequest.requestStatus = "rejected";
+    }
+    
+    await user.save();
+    
+    res.json({ 
+      msg: `Role request ${action === "approve" ? "approved" : "rejected"}`,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        roleRequest: user.roleRequest
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+
 module.exports = router;
