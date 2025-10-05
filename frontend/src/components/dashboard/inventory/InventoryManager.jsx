@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import API from "../../../services/api";
 import CategoryForm from "./CategoryForm";
 import MaterialForm from "./MaterialForm";
+import StockManager from "./StockManager";
 
-export default function InventoryManager({ activeView = 'materials' }) {
+export default function InventoryManager({ activeView = 'materials', userRole = 'user' }) {
   const [materials, setMaterials] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,6 +13,8 @@ export default function InventoryManager({ activeView = 'materials' }) {
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [editingMaterial, setEditingMaterial] = useState(null);
+  const [showStockManager, setShowStockManager] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -82,6 +85,22 @@ export default function InventoryManager({ activeView = 'materials' }) {
     }
   };
 
+  const handleStockUpdate = (materialId, newStock) => {
+    setMaterials(prev => prev.map(material => 
+      material._id === materialId 
+        ? { ...material, currentStock: newStock }
+        : material
+    ));
+  };
+
+  const openStockManager = (material) => {
+    setSelectedMaterial(material);
+    setShowStockManager(true);
+  };
+
+  // Check if user can manage stock (admin or manager only)
+  const canManageStock = userRole === 'admin' || userRole === 'manager';
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-6">
@@ -121,18 +140,20 @@ export default function InventoryManager({ activeView = 'materials' }) {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Categories Management</h3>
-          <button
-            onClick={() => {
-              setEditingCategory(null);
-              setShowCategoryForm(true);
-            }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Add Category
-          </button>
+          {canManageStock && (
+            <button
+              onClick={() => {
+                setEditingCategory(null);
+                setShowCategoryForm(true);
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add Category
+            </button>
+          )}
         </div>
         
         {showCategoryForm && (
@@ -154,12 +175,14 @@ export default function InventoryManager({ activeView = 'materials' }) {
               </svg>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Categories Yet</h3>
               <p className="text-gray-600 mb-4">Start by creating your first category</p>
-              <button
-                onClick={() => setShowCategoryForm(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Add Category
-              </button>
+              {canManageStock && (
+                <button
+                  onClick={() => setShowCategoryForm(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Add Category
+                </button>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -185,21 +208,25 @@ export default function InventoryManager({ activeView = 'materials' }) {
                         {new Date(category.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                        <button
-                          onClick={() => {
-                            setEditingCategory(category);
-                            setShowCategoryForm(true);
-                          }}
-                          className="text-blue-600 hover:text-blue-900 font-medium"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCategory(category._id)}
-                          className="text-red-600 hover:text-red-900 font-medium"
-                        >
-                          Delete
-                        </button>
+                        {canManageStock && (
+                          <button
+                            onClick={() => {
+                              setEditingCategory(category);
+                              setShowCategoryForm(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-900 font-medium"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {userRole === 'admin' && (
+                          <button
+                            onClick={() => handleDeleteCategory(category._id)}
+                            className="text-red-600 hover:text-red-900 font-medium"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -217,18 +244,20 @@ export default function InventoryManager({ activeView = 'materials' }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">Materials Management</h3>
-        <button
-          onClick={() => {
-            setEditingMaterial(null);
-            setShowMaterialForm(true);
-          }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Add Material
-        </button>
+        {canManageStock && (
+          <button
+            onClick={() => {
+              setEditingMaterial(null);
+              setShowMaterialForm(true);
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add Material
+          </button>
+        )}
       </div>
       
       {showMaterialForm && (
@@ -251,12 +280,14 @@ export default function InventoryManager({ activeView = 'materials' }) {
             </svg>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Materials Yet</h3>
             <p className="text-gray-600 mb-4">Start building your inventory</p>
-            <button
-              onClick={() => setShowMaterialForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Add Material
-            </button>
+            {canManageStock && (
+              <button
+                onClick={() => setShowMaterialForm(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Add Material
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -283,11 +314,23 @@ export default function InventoryManager({ activeView = 'materials' }) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${material.price}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center space-x-2">
-                        <span>{material.currentStock} / {material.minimumStock} {material.unit}</span>
-                        <div className={`w-2 h-2 rounded-full ${
-                          material.currentStock <= material.minimumStock ? 'bg-red-400' : 'bg-green-400'
-                        }`}></div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium text-gray-900">{material.currentStock} {material.unit}</span>
+                          <span className="text-gray-500">/</span>
+                          <span className="text-sm text-gray-600">{material.minimumStock} min</span>
+                          <div className={`w-2 h-2 rounded-full ${
+                            material.currentStock <= material.minimumStock ? 'bg-red-400' : 'bg-green-400'
+                          }`}></div>
+                        </div>
+                        {canManageStock && (
+                          <button
+                            onClick={() => openStockManager(material)}
+                            className="ml-3 bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                          >
+                            Manage Stock
+                          </button>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -306,21 +349,25 @@ export default function InventoryManager({ activeView = 'materials' }) {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                      <button
-                        onClick={() => {
-                          setEditingMaterial(material);
-                          setShowMaterialForm(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900 font-medium"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteMaterial(material._id)}
-                        className="text-red-600 hover:text-red-900 font-medium"
-                      >
-                        Delete
-                      </button>
+                      {(canManageStock) && (
+                        <button
+                          onClick={() => {
+                            setEditingMaterial(material);
+                            setShowMaterialForm(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 font-medium"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {userRole === 'admin' && (
+                        <button
+                          onClick={() => handleDeleteMaterial(material._id)}
+                          className="text-red-600 hover:text-red-900 font-medium"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -329,6 +376,17 @@ export default function InventoryManager({ activeView = 'materials' }) {
           </div>
         )}
       </div>
+      
+      {showStockManager && selectedMaterial && (
+        <StockManager
+          material={selectedMaterial}
+          onStockUpdate={handleStockUpdate}
+          onClose={() => {
+            setShowStockManager(false);
+            setSelectedMaterial(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -139,16 +139,16 @@ return (
           <>
             {activeSection === 'users' && <AdminPanel activeView="users" />}
             {activeSection === 'requests' && <AdminPanel activeView="requests" />}
-            {activeSection === 'materials' && <InventoryManager activeView="materials" />}
-            {activeSection === 'categories' && <InventoryManager activeView="categories" />}
+            {activeSection === 'materials' && <InventoryManager activeView="materials" userRole={userData?.role} />}
+            {activeSection === 'categories' && <InventoryManager activeView="categories" userRole={userData?.role} />}
           </>
         )}
         
         {/* Section-specific content for Manager */}
         {userData?.role === "manager" && (
           <>
-            {activeSection === 'materials' && <InventoryManager activeView="materials" />}
-            {activeSection === 'categories' && <InventoryManager activeView="categories" />}
+            {activeSection === 'materials' && <InventoryManager activeView="materials" userRole={userData?.role} />}
+            {activeSection === 'categories' && <InventoryManager activeView="categories" userRole={userData?.role} />}
           </>
         )}
       </div>
