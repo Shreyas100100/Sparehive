@@ -1,6 +1,7 @@
 const express = require("express");
 const Material = require("../models/Material");
 const Category = require("../models/Category");
+const StockTransaction = require("../models/StockTransaction");
 const auth = require("../middleware/auth");
 const router = express.Router();
 
@@ -87,6 +88,18 @@ router.post("/", auth(["admin", "manager"]), async (req, res) => {
     
     await newMaterial.save();
     
+    // Log initial stock transaction
+    await StockTransaction.logTransaction(
+      newMaterial._id,
+      'initial',
+      currentStock || 0,
+      0,
+      currentStock || 0,
+      req.user.id,
+      'Material created',
+      'Initial stock set during material creation'
+    );
+    
     // Populate references for the response
     const populatedMaterial = await Material.findById(newMaterial._id)
       .populate("category", "name")
@@ -171,7 +184,7 @@ router.delete("/:id", auth(["admin"]), async (req, res) => {
 // Update stock quantity (admin/manager only)
 router.patch("/:id/stock", auth(["admin", "manager"]), async (req, res) => {
   try {
-    const { quantity, action } = req.body;
+    const { quantity, action, reason, notes } = req.body;
     
     if (!["add", "remove", "set"].includes(action)) {
       return res.status(400).json({ msg: "Invalid action. Use 'add', 'remove', or 'set'." });
@@ -186,26 +199,127 @@ router.patch("/:id/stock", auth(["admin", "manager"]), async (req, res) => {
       return res.status(404).json({ msg: "Material not found" });
     }
     
+    const previousStock = material.currentStock;
+    let newStock = previousStock;
+    
     // Update stock based on action
     if (action === "add") {
-      material.currentStock += quantity;
+      newStock = previousStock + quantity;
     } else if (action === "remove") {
-      if (material.currentStock < quantity) {
+      if (previousStock < quantity) {
         return res.status(400).json({ msg: "Not enough stock available" });
       }
-      material.currentStock -= quantity;
+      newStock = previousStock - quantity;
     } else if (action === "set") {
-      material.currentStock = quantity;
+      newStock = quantity;
     }
     
-    // Update the lastUpdatedBy field
+    // Update material stock
+    material.currentStock = newStock;
     material.lastUpdatedBy = req.user.id;
-    
     await material.save();
+    
+    // Log the stock transaction
+    await StockTransaction.logTransaction(
+      material._id,
+      action,
+      action === "set" ? newStock : quantity,
+      previousStock,
+      newStock,
+      req.user.id,
+      reason || `Stock ${action}ed`,
+      notes || ''
+    );
     
     res.json({ 
       msg: "Stock updated successfully", 
-      currentStock: material.currentStock 
+      currentStock: newStock,
+      previousStock: previousStock,
+      change: newStock - previousStock
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+// Get stock transaction history for a specific material
+router.get("/:id/transactions", async (req, res) => {
+  try {
+    const { limit = 50, skip = 0 } = req.query;
+    
+    const material = await Material.findById(req.params.id);
+    if (!material) {
+      return res.status(404).json({ msg: "Material not found" });
+    }
+    
+    const transactions = await StockTransaction.getMaterialHistory(
+      req.params.id, 
+      parseInt(limit), 
+      parseInt(skip)
+    );
+    
+    const total = await StockTransaction.countDocuments({ material: req.params.id });
+    
+    res.json({
+      transactions: transactions.map(t => t.getDisplayInfo()),
+      total,
+      hasMore: (parseInt(skip) + transactions.length) < total
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+// Get recent activity across all materials (admin/manager only)
+router.get("/transactions/recent", auth(["admin", "manager"]), async (req, res) => {
+  try {
+    const { limit = 100, skip = 0 } = req.query;
+    
+    const transactions = await StockTransaction.getRecentActivity(
+      parseInt(limit), 
+      parseInt(skip)
+    );
+    
+    const total = await StockTransaction.countDocuments({});
+    
+    res.json({
+      transactions: transactions.map(t => ({
+        ...t.getDisplayInfo(),
+        materialName: t.material?.name || t.materialSnapshot.name,
+        performedBy: t.performedBy?.name || 'Unknown User',
+        performedByEmail: t.performedBy?.email || ''
+      })),
+      total,
+      hasMore: (parseInt(skip) + transactions.length) < total
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+// Get user's activity history
+router.get("/transactions/user/:userId", auth(["admin", "manager"]), async (req, res) => {
+  try {
+    const { limit = 50, skip = 0 } = req.query;
+    
+    const transactions = await StockTransaction.getUserActivity(
+      req.params.userId,
+      parseInt(limit), 
+      parseInt(skip)
+    );
+    
+    const total = await StockTransaction.countDocuments({ performedBy: req.params.userId });
+    
+    res.json({
+      transactions: transactions.map(t => ({
+        ...t.getDisplayInfo(),
+        materialName: t.material?.name || t.materialSnapshot.name
+      })),
+      total,
+      hasMore: (parseInt(skip) + transactions.length) < total
     });
   } catch (err) {
     console.error(err);

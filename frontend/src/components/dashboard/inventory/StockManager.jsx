@@ -5,11 +5,20 @@ export default function StockManager({ material, onStockUpdate, onClose }) {
   const [addQuantity, setAddQuantity] = useState("");
   const [removeQuantity, setRemoveQuantity] = useState("");
   const [setQuantity, setSetQuantity] = useState("");
+  const [addReason, setAddReason] = useState("");
+  const [removeReason, setRemoveReason] = useState("");
+  const [setReason, setSetReason] = useState("");
+  const [addNotes, setAddNotes] = useState("");
+  const [removeNotes, setRemoveNotes] = useState("");
+  const [setNotes, setSetNotes] = useState("");
   const [activeTab, setActiveTab] = useState("add");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [transactions, setTransactions] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
-  const handleStockOperation = async (action, quantity) => {
+  const handleStockOperation = async (action, quantity, reason, notes) => {
     if (!quantity || quantity <= 0) {
       setError("Please enter a valid quantity");
       return;
@@ -19,7 +28,7 @@ export default function StockManager({ material, onStockUpdate, onClose }) {
       setLoading(true);
       setError("");
       
-      const response = await stockAPI.updateStock(material._id, parseInt(quantity), action);
+      const response = await stockAPI.updateStock(material._id, parseInt(quantity), action, reason, notes);
 
       onStockUpdate(material._id, response.data.currentStock);
       onClose();
@@ -32,17 +41,51 @@ export default function StockManager({ material, onStockUpdate, onClose }) {
 
   const handleAddStock = (e) => {
     e.preventDefault();
-    handleStockOperation("add", addQuantity);
+    handleStockOperation("add", addQuantity, addReason, addNotes);
   };
 
   const handleRemoveStock = (e) => {
     e.preventDefault();
-    handleStockOperation("remove", removeQuantity);
+    handleStockOperation("remove", removeQuantity, removeReason, removeNotes);
   };
 
   const handleSetStock = (e) => {
     e.preventDefault();
-    handleStockOperation("set", setQuantity);
+    handleStockOperation("set", setQuantity, setReason, setNotes);
+  };
+
+  const loadTransactionHistory = async () => {
+    if (historyLoaded) return;
+    
+    try {
+      setLoadingHistory(true);
+      const response = await stockAPI.getTransactionHistory(material._id, 20);
+      setTransactions(response.data.transactions);
+      setHistoryLoaded(true);
+    } catch (err) {
+      console.error("Failed to load transaction history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  const getTransactionIcon = (type) => {
+    switch (type) {
+      case 'add':
+        return <span className="text-green-600">↗️</span>;
+      case 'remove':
+        return <span className="text-red-600">↘️</span>;
+      case 'set':
+        return <span className="text-blue-600">⚙️</span>;
+      case 'initial':
+        return <span className="text-gray-600">🏁</span>;
+      default:
+        return <span className="text-gray-600">📝</span>;
+    }
   };
 
   return (
@@ -142,6 +185,22 @@ export default function StockManager({ material, onStockUpdate, onClose }) {
             </svg>
             Set Stock
           </button>
+          <button
+            onClick={() => {
+              setActiveTab("history");
+              loadTransactionHistory();
+            }}
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "history" 
+                ? "border-purple-500 text-purple-600 bg-purple-50" 
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            History
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -165,6 +224,32 @@ export default function StockManager({ material, onStockUpdate, onClose }) {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
                     placeholder="Enter quantity to add"
                     required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Reason for Adding Stock
+                  </label>
+                  <input
+                    type="text"
+                    value={addReason}
+                    onChange={(e) => setAddReason(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    placeholder="e.g., New shipment received, Inventory correction"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Additional Notes (Optional)
+                  </label>
+                  <textarea
+                    value={addNotes}
+                    onChange={(e) => setAddNotes(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                    placeholder="Any additional details about this stock addition"
+                    rows="2"
                   />
                 </div>
 
@@ -207,6 +292,32 @@ export default function StockManager({ material, onStockUpdate, onClose }) {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
                     placeholder="Enter quantity to remove"
                     required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Reason for Removing Stock
+                  </label>
+                  <input
+                    type="text"
+                    value={removeReason}
+                    onChange={(e) => setRemoveReason(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
+                    placeholder="e.g., Sale, Usage, Damage, Loss"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Additional Notes (Optional)
+                  </label>
+                  <textarea
+                    value={removeNotes}
+                    onChange={(e) => setRemoveNotes(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
+                    placeholder="Any additional details about this stock removal"
+                    rows="2"
                   />
                 </div>
 
@@ -256,6 +367,32 @@ export default function StockManager({ material, onStockUpdate, onClose }) {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Reason for Setting Stock
+                  </label>
+                  <input
+                    type="text"
+                    value={setReason}
+                    onChange={(e) => setSetReason(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., Physical inventory count, System correction"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Additional Notes (Optional)
+                  </label>
+                  <textarea
+                    value={setNotes}
+                    onChange={(e) => setSetNotes(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Any additional details about this stock adjustment"
+                    rows="2"
+                  />
+                </div>
+
                 {setQuantity !== "" && (
                   <div className="mt-3 p-3 bg-white border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-800">
@@ -276,6 +413,77 @@ export default function StockManager({ material, onStockUpdate, onClose }) {
                 </button>
               </div>
             </form>
+          )}
+          
+          {/* History Tab */}
+          {activeTab === "history" && (
+            <div className="space-y-4">
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h5 className="font-medium text-purple-800 mb-2">Transaction History</h5>
+                <p className="text-sm text-purple-700 mb-4">Complete audit trail of all stock movements for this material.</p>
+                
+                {loadingHistory ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
+                    <p className="text-purple-600 mt-2">Loading history...</p>
+                  </div>
+                ) : transactions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No History Yet</h3>
+                    <p className="text-gray-600">No stock transactions have been recorded for this material.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {transactions.map((transaction, index) => (
+                      <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-3">
+                            <div className="text-2xl">
+                              {getTransactionIcon(transaction.type)}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                  transaction.type === 'add' ? 'bg-green-100 text-green-800' :
+                                  transaction.type === 'remove' ? 'bg-red-100 text-red-800' :
+                                  transaction.type === 'set' ? 'bg-blue-100 text-blue-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {transaction.type.toUpperCase()}
+                                </span>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {transaction.change} {transaction.unit}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-1">
+                                Stock: {transaction.previousStock} → {transaction.newStock} {transaction.unit}
+                              </p>
+                              {transaction.reason && (
+                                <p className="text-sm text-gray-700 mb-1">
+                                  <strong>Reason:</strong> {transaction.reason}
+                                </p>
+                              )}
+                              {transaction.notes && (
+                                <p className="text-sm text-gray-600 mb-1">
+                                  <strong>Notes:</strong> {transaction.notes}
+                                </p>
+                              )}
+                              <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                                <span>By: {transaction.performedBy}</span>
+                                <span>{formatDate(transaction.date)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
 

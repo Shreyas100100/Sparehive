@@ -6,6 +6,7 @@ import AdminPanel from "../components/dashboard/AdminPanel";
 import ManagerPanel from "../components/dashboard/ManagerPanel";
 import UserPanel from "../components/dashboard/UserPanel";
 import InventoryManager from "../components/dashboard/inventory/InventoryManager";
+import ActivityHistory from "../components/dashboard/ActivityHistory";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -141,6 +142,7 @@ return (
             {activeSection === 'requests' && <AdminPanel activeView="requests" />}
             {activeSection === 'materials' && <InventoryManager activeView="materials" userRole={userData?.role} />}
             {activeSection === 'categories' && <InventoryManager activeView="categories" userRole={userData?.role} />}
+            {activeSection === 'activity' && <ActivityHistory userRole={userData?.role} />}
           </>
         )}
         
@@ -149,6 +151,7 @@ return (
           <>
             {activeSection === 'materials' && <InventoryManager activeView="materials" userRole={userData?.role} />}
             {activeSection === 'categories' && <InventoryManager activeView="categories" userRole={userData?.role} />}
+            {activeSection === 'activity' && <ActivityHistory userRole={userData?.role} />}
           </>
         )}
       </div>
