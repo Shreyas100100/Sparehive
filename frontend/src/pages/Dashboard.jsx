@@ -130,7 +130,7 @@ return (
         {activeSection === 'overview' && (
           <>
             {userData?.role === "admin" && <AdminPanel />}
-            {userData?.role === "manager" && <ManagerPanel userData={userData} />}
+            {userData?.role === "manager" && <ManagerPanel userData={userData} onNavigate={setActiveSection} />}
             {userData?.role === "user" && <UserPanel userData={userData} />}
           </>
         )}
@@ -153,6 +153,13 @@ return (
             {activeSection === 'categories' && <InventoryManager activeView="categories" userRole={userData?.role} />}
             {activeSection === 'activity' && <ActivityHistory userRole={userData?.role} />}
           </>
+        )}
+        
+        {/* Debug info - remove this after testing */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="fixed bottom-4 right-4 bg-black bg-opacity-75 text-white p-2 rounded text-xs">
+            Role: {userData?.role} | Section: {activeSection}
+          </div>
         )}
       </div>
     </div>

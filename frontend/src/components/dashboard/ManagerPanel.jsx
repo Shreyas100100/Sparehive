@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import API from "../../services/api";
 
-export default function ManagerPanel({ userData }) {
+export default function ManagerPanel({ userData, onNavigate }) {
   const [stats, setStats] = useState({
     totalMaterials: 0,
     totalCategories: 0,
@@ -39,7 +39,11 @@ export default function ManagerPanel({ userData }) {
         actions.push({
           title: "Check Low Stock",
           description: `${lowStockRes.data.length} items running low`,
-          action: () => window.location.href = '/dashboard/materials',
+          action: () => {
+            if (onNavigate) {
+              onNavigate('materials');
+            }
+          },
           color: "red",
           urgent: true,
           icon: (
@@ -54,7 +58,11 @@ export default function ManagerPanel({ userData }) {
         {
           title: "Add Material",
           description: "Add new items to inventory",
-          action: () => window.location.href = '/dashboard/materials',
+          action: () => {
+            if (onNavigate) {
+              onNavigate('materials');
+            }
+          },
           color: "blue",
           urgent: false,
           icon: (
@@ -66,7 +74,11 @@ export default function ManagerPanel({ userData }) {
         {
           title: "Manage Categories",
           description: "Organize your inventory",
-          action: () => window.location.href = '/dashboard/categories',
+          action: () => {
+            if (onNavigate) {
+              onNavigate('categories');
+            }
+          },
           color: "green",
           urgent: false,
           icon: (
@@ -78,7 +90,11 @@ export default function ManagerPanel({ userData }) {
         {
           title: "View Activity",
           description: "Recent inventory changes",
-          action: () => {}, // Add activity view later
+          action: () => {
+            if (onNavigate) {
+              onNavigate('activity');
+            }
+          },
           color: "purple",
           urgent: false,
           icon: (

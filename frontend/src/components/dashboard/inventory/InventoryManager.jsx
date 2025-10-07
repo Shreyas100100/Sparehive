@@ -101,6 +101,9 @@ export default function InventoryManager({ activeView = 'materials', userRole = 
   // Check if user can manage stock (admin or manager only)
   const canManageStock = userRole === 'admin' || userRole === 'manager';
 
+  console.log('InventoryManager - User Role:', userRole);
+  console.log('InventoryManager - Can Manage Stock:', canManageStock);
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-6">
