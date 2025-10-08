@@ -219,16 +219,34 @@ export default function MaterialForm({ material, categories, onSubmit, onCancel 
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Unit
+            Unit*
           </label>
-          <input
-            type="text"
+          <select
             name="unit"
             value={formData.unit}
             onChange={handleChange}
             className="w-full border-gray-300 rounded-md shadow-sm"
-            placeholder="pcs, kg, liters, etc."
-          />
+            required
+          >
+            <option value="pcs">pcs (pieces)</option>
+            <option value="kg">kg (kilogram)</option>
+            <option value="g">g (gram)</option>
+            <option value="mg">mg (milligram)</option>
+            <option value="L">L (liter)</option>
+            <option value="mL">mL (milliliter)</option>
+            <option value="box">box</option>
+            <option value="carton">carton</option>
+            <option value="pack">pack</option>
+            <option value="pair">pair</option>
+            <option value="set">set</option>
+            <option value="roll">roll</option>
+            <option value="bottle">bottle</option>
+            <option value="bag">bag</option>
+            <option value="cm">cm (centimeter)</option>
+            <option value="m">m (meter)</option>
+            <option value="inch">inch</option>
+            <option value="ft">ft (foot)</option>
+          </select>
         </div>
         
         {/* Stock Note Field - Show when editing and stock changed, or when adding with initial stock */}

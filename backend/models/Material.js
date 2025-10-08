@@ -44,7 +44,15 @@ const materialSchema = new mongoose.Schema({
   unit: {
     type: String,
     default: "pcs",
-    trim: true
+    trim: true,
+    enum: ["pcs", "kg", "g", "mg", "L", "mL", "box", "carton", "pack", "pair", "set", "roll", "bottle", "bag", "cm", "m", "inch", "ft"],
+    validate: {
+      validator: function(v) {
+        // Regular expression to ensure no emojis or special characters
+        return /^[a-zA-Z0-9]+$/.test(v);
+      },
+      message: props => `${props.value} is not a valid unit! Only alphanumeric characters allowed.`
+    }
   },
   notes: {
     type: String,

@@ -71,6 +71,7 @@ router.post("/", auth(["admin", "manager"]), async (req, res) => {
       return res.status(400).json({ msg: "Invalid category" });
     }
     
+    // Create the new material
     const newMaterial = new Material({
       name,
       category,
@@ -86,7 +87,15 @@ router.post("/", auth(["admin", "manager"]), async (req, res) => {
       lastUpdatedBy: req.user.id
     });
     
-    await newMaterial.save();
+    try {
+      await newMaterial.save();
+    } catch (validationError) {
+      // Handle Mongoose validation errors more gracefully
+      if (validationError.errors && validationError.errors.unit) {
+        return res.status(400).json({ msg: validationError.errors.unit.message });
+      }
+      throw validationError;
+    }
     
     // Log initial stock transaction
     await StockTransaction.logTransaction(
@@ -150,7 +159,15 @@ router.put("/:id", auth(["admin", "manager"]), async (req, res) => {
     // Update the lastUpdatedBy field
     material.lastUpdatedBy = req.user.id;
     
-    await material.save();
+    try {
+      await material.save();
+    } catch (validationError) {
+      // Handle Mongoose validation errors more gracefully
+      if (validationError.errors && validationError.errors.unit) {
+        return res.status(400).json({ msg: validationError.errors.unit.message });
+      }
+      throw validationError;
+    }
     
     // Populate references for the response
     const updatedMaterial = await Material.findById(material._id)

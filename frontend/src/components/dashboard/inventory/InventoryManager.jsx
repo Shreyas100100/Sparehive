@@ -319,11 +319,20 @@ export default function InventoryManager({ activeView = 'materials', userRole = 
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <span className="font-medium text-gray-900">{material.currentStock} {material.unit}</span>
-                          <span className="text-gray-500">/</span>
-                          <span className="text-sm text-gray-600">{material.minimumStock} min</span>
+                          <div>
+                            <span className={`font-medium ${
+                            material.currentStock <= material.minimumStock ? 'text-red-600' : 
+                            material.currentStock <= material.minimumStock * 1.5 ? 'text-amber-600' : 
+                            'text-green-600'
+                          }`}>
+                            {material.currentStock} {material.unit}
+                          </span>
+                            <span className="ml-1 text-sm text-gray-500">(Min: {material.minimumStock})</span>
+                          </div>
                           <div className={`w-2 h-2 rounded-full ${
-                            material.currentStock <= material.minimumStock ? 'bg-red-400' : 'bg-green-400'
+                            material.currentStock <= material.minimumStock ? 'bg-red-400' :
+                            material.currentStock <= material.minimumStock * 1.5 ? 'bg-amber-400' :
+                            'bg-green-400'
                           }`}></div>
                         </div>
                         {canManageStock && (
@@ -346,9 +355,15 @@ export default function InventoryManager({ activeView = 'materials', userRole = 
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         material.currentStock <= material.minimumStock 
                           ? "bg-red-100 text-red-800" 
-                          : "bg-green-100 text-green-800"
+                          : material.currentStock <= material.minimumStock * 1.5
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-green-100 text-green-800"
                       }`}>
-                        {material.currentStock <= material.minimumStock ? "Low Stock" : "In Stock"}
+                        {material.currentStock <= material.minimumStock 
+                          ? "Low Stock" 
+                          : material.currentStock <= material.minimumStock * 1.5
+                            ? "Moderate Stock"
+                            : "Good Stock"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">

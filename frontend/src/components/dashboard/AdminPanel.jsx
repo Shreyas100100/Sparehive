@@ -457,7 +457,14 @@ export default function AdminPanel({ activeView: propActiveView = 'overview' }) 
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{material.category?.name || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${material.price}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {material.currentStock} / {material.minimumStock} {material.unit}
+                      <span className={`font-medium ${
+                        material.currentStock <= material.minimumStock ? 'text-red-600' : 
+                        material.currentStock <= material.minimumStock * 1.5 ? 'text-amber-600' : 
+                        'text-green-600'
+                      }`}>
+                        {material.currentStock}
+                      </span> {material.unit} 
+                      <span className="text-sm text-gray-500 ml-1">(Min: {material.minimumStock})</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {material.location} {material.cupboard && `- ${material.cupboard}`} {material.shelf && `- ${material.shelf}`}
@@ -466,9 +473,15 @@ export default function AdminPanel({ activeView: propActiveView = 'overview' }) 
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         material.currentStock <= material.minimumStock 
                           ? "bg-red-100 text-red-800" 
-                          : "bg-green-100 text-green-800"
+                          : material.currentStock <= material.minimumStock * 1.5
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-green-100 text-green-800"
                       }`}>
-                        {material.currentStock <= material.minimumStock ? "Low Stock" : "In Stock"}
+                        {material.currentStock <= material.minimumStock 
+                          ? "Low Stock" 
+                          : material.currentStock <= material.minimumStock * 1.5
+                            ? "Moderate Stock"
+                            : "Good Stock"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">

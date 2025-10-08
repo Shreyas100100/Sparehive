@@ -112,7 +112,7 @@ export default function StockManager({ material, onStockUpdate, onClose }) {
               <span className="ml-2 font-semibold text-blue-600">{material.currentStock} {material.unit}</span>
             </div>
             <div>
-              <span className="text-gray-600">Minimum Stock:</span>
+              <span className="text-gray-600">Minimum Required:</span>
               <span className="ml-2 font-semibold text-gray-700">{material.minimumStock} {material.unit}</span>
             </div>
             <div>
@@ -124,9 +124,15 @@ export default function StockManager({ material, onStockUpdate, onClose }) {
               <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
                 material.currentStock <= material.minimumStock 
                   ? "bg-red-100 text-red-800" 
-                  : "bg-green-100 text-green-800"
+                  : material.currentStock <= material.minimumStock * 1.5
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-green-100 text-green-800"
               }`}>
-                {material.currentStock <= material.minimumStock ? "Low Stock" : "In Stock"}
+                {material.currentStock <= material.minimumStock 
+                  ? "Low Stock" 
+                  : material.currentStock <= material.minimumStock * 1.5
+                    ? "Moderate Stock"
+                    : "Good Stock"}
               </span>
             </div>
           </div>
