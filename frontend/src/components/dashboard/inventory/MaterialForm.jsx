@@ -56,6 +56,37 @@ export default function MaterialForm({ material, categories, onSubmit, onCancel 
       // Extract stockNote from formData before sending to API
       const { stockNote, ...dataToSend } = formData;
       
+      // Check for duplicate material names within the same category before submitting
+      const existingMaterials = await API.get("/materials");
+      
+      if (!material) { // Only check for new materials
+        const duplicateMaterial = existingMaterials.data.find(m => 
+          m.name.toLowerCase() === formData.name.trim().toLowerCase() && 
+          m.category._id === formData.category
+        );
+        
+        if (duplicateMaterial) {
+          setError("A material with this name already exists in the selected category");
+          setLoading(false);
+          return;
+        }
+      } else if (material && 
+                (material.name.toLowerCase() !== formData.name.trim().toLowerCase() || 
+                 material.category._id !== formData.category)) {
+        // Check if edited material name already exists in the category (if name or category changed)
+        const duplicateMaterial = existingMaterials.data.find(m => 
+          m.name.toLowerCase() === formData.name.trim().toLowerCase() && 
+          m.category._id === formData.category &&
+          m._id !== material._id
+        );
+        
+        if (duplicateMaterial) {
+          setError("A material with this name already exists in the selected category");
+          setLoading(false);
+          return;
+        }
+      }
+      
       if (material) {
         // For edits, include the stock note if stock was changed
         if (material.currentStock !== formData.currentStock) {

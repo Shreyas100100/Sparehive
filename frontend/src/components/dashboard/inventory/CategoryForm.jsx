@@ -32,14 +32,49 @@ export default function CategoryForm({ category, onSubmit, onCancel }) {
     setError("");
     
     try {
+      // Normalize category name
+      const normalizedName = formData.name.trim();
+      
+      // Check for duplicate category names before submitting
+      const existingCategories = await API.get("/categories");
+      
+      if (!category) {
+        // For new categories, check if the name already exists
+        const duplicateCategory = existingCategories.data.find(c => 
+          c.name.toLowerCase() === normalizedName.toLowerCase()
+        );
+        
+        if (duplicateCategory) {
+          setError("A category with this name already exists");
+          setLoading(false);
+          return;
+        }
+      } else if (category && category.name.toLowerCase() !== normalizedName.toLowerCase()) {
+        // For edited categories, check if the new name already exists (if name changed)
+        const duplicateCategory = existingCategories.data.find(c => 
+          c.name.toLowerCase() === normalizedName.toLowerCase() && 
+          c._id !== category._id
+        );
+        
+        if (duplicateCategory) {
+          setError("A category with this name already exists");
+          setLoading(false);
+          return;
+        }
+      }
+      
       let response;
+      const dataToSend = {
+        ...formData,
+        name: normalizedName
+      };
       
       if (category) {
         // Update existing category
-        response = await API.put(`/categories/${category._id}`, formData);
+        response = await API.put(`/categories/${category._id}`, dataToSend);
       } else {
         // Create new category
-        response = await API.post("/categories", formData);
+        response = await API.post("/categories", dataToSend);
       }
       
       onSubmit(response.data);

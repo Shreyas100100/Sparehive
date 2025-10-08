@@ -70,7 +70,7 @@ const materialSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Create a compound index for better search performance
-materialSchema.index({ name: 1, category: 1 });
+// Create a compound unique index to prevent duplicate materials within a category
+materialSchema.index({ name: 1, category: 1 }, { unique: true });
 
 module.exports = mongoose.model("Material", materialSchema);

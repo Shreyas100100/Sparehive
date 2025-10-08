@@ -19,19 +19,33 @@ router.post("/", auth(["admin", "manager"]), async (req, res) => {
   try {
     const { name, description } = req.body;
     
-    // Check if category already exists
-    const existingCategory = await Category.findOne({ name: { $regex: new RegExp(`^${name}$`, "i") } });
+    // Normalize name by trimming and converting to lowercase for consistency
+    const normalizedName = name.trim();
+    
+    // Check if category already exists (case insensitive)
+    const existingCategory = await Category.findOne({ 
+      name: { $regex: new RegExp(`^${normalizedName}$`, "i") } 
+    });
+    
     if (existingCategory) {
       return res.status(400).json({ msg: "Category already exists" });
     }
     
     const newCategory = new Category({
-      name,
+      name: normalizedName,
       description: description || "",
       createdBy: req.user.id
     });
     
-    await newCategory.save();
+    try {
+      await newCategory.save();
+    } catch (err) {
+      // Handle unique constraint violation
+      if (err.code === 11000) {
+        return res.status(400).json({ msg: "Category already exists" });
+      }
+      throw err;
+    }
     res.status(201).json(newCategory);
   } catch (err) {
     console.error(err);
@@ -44,10 +58,13 @@ router.put("/:id", auth(["admin", "manager"]), async (req, res) => {
   try {
     const { name, description } = req.body;
     
+    // Normalize name by trimming if provided
+    const normalizedName = name ? name.trim() : null;
+    
     // Check if new name already exists (if name is being changed)
-    if (name) {
+    if (normalizedName) {
       const existingCategory = await Category.findOne({ 
-        name: { $regex: new RegExp(`^${name}$`, "i") },
+        name: { $regex: new RegExp(`^${normalizedName}$`, "i") },
         _id: { $ne: req.params.id }
       });
       
@@ -61,10 +78,18 @@ router.put("/:id", auth(["admin", "manager"]), async (req, res) => {
       return res.status(404).json({ msg: "Category not found" });
     }
     
-    if (name) category.name = name;
+    if (normalizedName) category.name = normalizedName;
     if (description !== undefined) category.description = description;
     
-    await category.save();
+    try {
+      await category.save();
+    } catch (err) {
+      // Handle unique constraint violation
+      if (err.code === 11000) {
+        return res.status(400).json({ msg: "Category name already exists" });
+      }
+      throw err;
+    }
     res.json(category);
   } catch (err) {
     console.error(err);

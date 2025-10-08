@@ -94,6 +94,10 @@ router.post("/", auth(["admin", "manager"]), async (req, res) => {
       if (validationError.errors && validationError.errors.unit) {
         return res.status(400).json({ msg: validationError.errors.unit.message });
       }
+      // Check for duplicate key error (code 11000)
+      if (validationError.code === 11000) {
+        return res.status(400).json({ msg: "A material with this name already exists in the selected category" });
+      }
       throw validationError;
     }
     
@@ -165,6 +169,10 @@ router.put("/:id", auth(["admin", "manager"]), async (req, res) => {
       // Handle Mongoose validation errors more gracefully
       if (validationError.errors && validationError.errors.unit) {
         return res.status(400).json({ msg: validationError.errors.unit.message });
+      }
+      // Check for duplicate key error (code 11000)
+      if (validationError.code === 11000) {
+        return res.status(400).json({ msg: "A material with this name already exists in the selected category" });
       }
       throw validationError;
     }
