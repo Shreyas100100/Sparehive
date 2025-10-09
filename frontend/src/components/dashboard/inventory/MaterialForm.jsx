@@ -17,6 +17,9 @@ export default function MaterialForm({ material, categories, onSubmit, onCancel 
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryData, setNewCategoryData] = useState({ name: "", description: "" });
+  const [categoryError, setCategoryError] = useState("");
   
   // If editing, populate form with material data
   useEffect(() => {
@@ -43,6 +46,58 @@ export default function MaterialForm({ material, categories, onSubmit, onCancel 
       ...formData,
       [name]: type === "number" ? parseFloat(value) : value
     });
+  };
+  
+  // Function to handle adding a new category
+  const handleAddCategory = async () => {
+    if (!newCategoryData.name.trim()) {
+      setCategoryError("Category name is required");
+      return;
+    }
+    
+    try {
+      setCategoryError("");
+      
+      // Normalize category name
+      const normalizedName = newCategoryData.name.trim();
+      
+      // Check for duplicate category names
+      const existingCategories = await API.get("/categories");
+      const duplicateCategory = existingCategories.data.find(c => 
+        c.name.toLowerCase() === normalizedName.toLowerCase()
+      );
+      
+      if (duplicateCategory) {
+        setCategoryError("A category with this name already exists");
+        return;
+      }
+      
+      // Create new category
+      const response = await API.post("/categories", {
+        name: normalizedName,
+        description: newCategoryData.description.trim()
+      });
+      
+      // Add the new category to the form data
+      setFormData({
+        ...formData,
+        category: response.data._id
+      });
+      
+      // Close the category form
+      setShowAddCategory(false);
+      setNewCategoryData({ name: "", description: "" });
+      
+      // Notify parent component to refresh categories list
+      if (onSubmit) {
+        // We don't want to submit the form yet, just refresh the categories
+        // Let's assume onSubmit can handle a special case to just refresh categories
+        onSubmit({ refreshCategories: true });
+      }
+    } catch (err) {
+      setCategoryError(err.response?.data?.msg || "Failed to create category");
+      console.error(err);
+    }
   };
   
   const handleSubmit = async (e) => {
@@ -105,6 +160,11 @@ export default function MaterialForm({ material, categories, onSubmit, onCancel 
         response = await API.post("/materials", dataToSend);
       }
       
+      // Reset the category form if it was open
+      setShowAddCategory(false);
+      setNewCategoryData({ name: "", description: "" });
+      setCategoryError("");
+      
       onSubmit(response.data);
     } catch (err) {
       setError(err.response?.data?.msg || "Failed to save material");
@@ -145,20 +205,90 @@ export default function MaterialForm({ material, categories, onSubmit, onCancel 
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Category*
           </label>
-          <select
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            className="w-full border-gray-300 rounded-md shadow-sm"
-            required
-          >
-            <option value="">Select Category</option>
-            {categories.map(cat => (
-              <option key={cat._id} value={cat._id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+          {!showAddCategory ? (
+            <div className="flex items-center">
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                className="w-full border-gray-300 rounded-md shadow-sm"
+                required
+              >
+                <option value="">Select Category</option>
+                {categories.map(cat => (
+                  <option key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setShowAddCategory(true)}
+                className="ml-2 text-blue-600 hover:text-blue-800 flex items-center text-sm"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                New
+              </button>
+            </div>
+          ) : (
+            <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+              <h4 className="text-sm font-medium text-blue-800 mb-2">Add New Category</h4>
+              
+              {categoryError && (
+                <div className="text-xs bg-red-50 text-red-700 p-2 rounded-md mb-2">
+                  {categoryError}
+                </div>
+              )}
+              
+              <div className="mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Name*
+                </label>
+                <input
+                  type="text"
+                  value={newCategoryData.name}
+                  onChange={(e) => setNewCategoryData({...newCategoryData, name: e.target.value})}
+                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
+                  required
+                />
+              </div>
+              
+              <div className="mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <input
+                  type="text"
+                  value={newCategoryData.description}
+                  onChange={(e) => setNewCategoryData({...newCategoryData, description: e.target.value})}
+                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddCategory(false);
+                    setNewCategoryData({ name: "", description: "" });
+                    setCategoryError("");
+                  }}
+                  className="px-2 py-1 text-xs text-gray-700 bg-white border border-gray-300 rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddCategory}
+                  className="px-2 py-1 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded"
+                >
+                  Add Category
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         
         <div>

@@ -52,6 +52,14 @@ export default function InventoryManager({ activeView = 'materials', userRole = 
 
   const handleMaterialSubmit = async (materialData) => {
     try {
+      // Check if we only need to refresh categories (from inline category creation)
+      if (materialData && materialData.refreshCategories) {
+        // Only refresh categories list
+        const categoriesRes = await API.get("/categories");
+        setCategories(categoriesRes.data);
+        return; // Don't close the form or refresh everything
+      }
+      
       setShowMaterialForm(false);
       setEditingMaterial(null);
       await fetchData(); // Refresh data
