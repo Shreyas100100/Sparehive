@@ -122,6 +122,16 @@ export default function AdminPanel({ activeView: propActiveView = 'overview' }) 
     }
   };
 
+  const handleDemoteUser = async (userId) => {
+    try {
+      await API.patch(`/auth/demote/${userId}`);
+      await fetchDashboardData(); // Refresh data
+    } catch (err) {
+      setError('Failed to update user role. Please try again.');
+      console.error(err);
+    }
+  };
+
   const handleRoleRequest = async (userId, action) => {
     try {
       await API.patch(`/auth/role-requests/${userId}`, { action });
@@ -311,9 +321,24 @@ export default function AdminPanel({ activeView: propActiveView = 'overview' }) 
                       {user.role === "user" && (
                         <button
                           onClick={() => handlePromoteUser(user._id)}
-                          className="text-blue-600 hover:text-blue-900 font-medium"
+                          className="bg-blue-500 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-600 transition-colors flex items-center gap-1"
                         >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path>
+                          </svg>
                           Promote to Manager
+                        </button>
+                      )}
+                      {user.role === "manager" && (
+                        <button
+                          onClick={() => handleDemoteUser(user._id)}
+                          className="bg-indigo-500 text-white px-3 py-1 rounded-md text-sm hover:bg-indigo-600 transition-colors flex items-center gap-1"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+                          </svg>
+                          Set as Regular User
                         </button>
                       )}
                     </td>

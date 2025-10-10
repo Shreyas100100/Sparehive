@@ -115,6 +115,22 @@ router.patch("/promote/:id", auth(["admin"]), async (req, res) => {
   }
 });
 
+// Set user as regular user (admin only)
+router.patch("/demote/:id", auth(["admin"]), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    user.role = "user";
+    await user.save();
+
+    res.json({ msg: "User role updated to regular user", user: { _id: user._id, name: user.name, email: user.email, role: user.role } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
 // Get current user information
 router.get("/me", auth(), async (req, res) => {
   try {
